@@ -1,0 +1,11 @@
+
+/.vs
+HangedMan.sln
+HangedMan.vcxproj
+HangedMan.vcxproj.filters
+HangedMan.vcxproj.user
+*.pdb
+*.idb
+/HangedMan
+*.exe
+x64/Debug/passwords.txt
