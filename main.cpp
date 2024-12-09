@@ -6,6 +6,7 @@
 #include <cstdlib>
 #include <ctime>
 #include <algorithm>
+#include <map>
 
 #ifdef _WIN32
 #include <windows.h>
@@ -36,6 +37,39 @@ int score = 0;
 int totalErrors = 0;
 int totalLetters = 0;
 int hiddenLetters = 0;
+
+void SaveHighScore(const std::string& playerName, int playerScore) {
+    std::ofstream file("highscores.txt", std::ios::app);
+    if (file.is_open()) {
+        file << playerName << " " << playerScore << std::endl;
+        file.close();
+    }
+}
+
+std::map<int, std::string, std::greater<int>> LoadHighScores() {
+    std::map<int, std::string, std::greater<int>> highScores;
+    std::ifstream file("highscores.txt");
+    if (file.is_open()) {
+        std::string name;
+        int score;
+        while (file >> name >> score) {
+            highScores[score] = name;
+        }
+        file.close();
+    }
+    return highScores;
+}
+
+void DisplayHighScores() {
+    auto highScores = LoadHighScores();
+    std::wcout << L"Najlepsze wyniki:" << std::endl;
+    int count = 0;
+    for (const auto& [score, name] : highScores) {
+        if (count >= 10) break;
+        std::wcout << std::wstring(name.begin(), name.end()) << L": " << score << std::endl;
+        count++;
+    }
+}
 
 void PrintGame(int bledy) {
 #ifdef _WIN32
@@ -115,8 +149,13 @@ void GetPlayerPassword() {
     std::transform(lowerPassword.begin(), lowerPassword.end(), lowerPassword.begin(), ::tolower);
     if (playerInput == lowerPassword) {
         std::wcout << L"Gratulacje! Odgadles haslo!" << std::endl;
-        score += (totalLetters - hiddenLetters) * 10 - totalErrors * 5;
+        score += hiddenLetters * 10 - totalErrors * 5 + totalLetters ^ 2;
         std::wcout << L"Twoja punktacja: " << score << std::endl;
+        std::wcout << L"Podaj swoj nick: ";
+        std::string playerName;
+        std::cin >> playerName;
+        SaveHighScore(playerName, score);
+        DisplayHighScores();
     }
     else {
         PrintGame(11);
@@ -209,6 +248,11 @@ int main() {
                     std::wcout << L"Gratulacje! Odgadles haslo!" << std::endl;
                     score += (totalLetters - hiddenLetters) * 10 - totalErrors * 5;
                     std::wcout << L"Twoja punktacja: " << score << std::endl;
+                    std::wcout << L"Podaj swoj nick: ";
+                    std::string playerName;
+                    std::cin >> playerName;
+                    SaveHighScore(playerName, score);
+                    DisplayHighScores();
                     inGame = GetStartNewGame();
                     newGame = true;
                     break;
