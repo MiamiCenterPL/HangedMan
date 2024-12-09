@@ -15,7 +15,6 @@
 #include <unistd.h>
 #endif
 
-// Stała reprezentująca hasło
 std::string password = "test";
 std::wstring hanger[] = {
     L"        \n        \n        \n        \n        \n        \n         ", //0
@@ -33,7 +32,11 @@ std::wstring hanger[] = {
 };
 std::vector <char> guessedLetters;
 
-// Funkcja rysująca wisielca
+int score = 0;
+int totalErrors = 0;
+int totalLetters = 0;
+int hiddenLetters = 0;
+
 void PrintGame(int bledy) {
 #ifdef _WIN32
     system("cls");
@@ -48,7 +51,6 @@ void PrintGame(int bledy) {
     }
 }
 
-// Funkcja sprawdzająca czy litera jest w haśle
 bool CheckLetter(char letter) {
     letter = tolower(letter);
     for (int i = 0; i < password.length(); i++) {
@@ -59,14 +61,15 @@ bool CheckLetter(char letter) {
     return false;
 }
 
-// Funkcja pokazujaca odgadniete litery w hasle, np. a _ _ a _ a _ a _ _ a
 void ShowPassword() {
+    hiddenLetters = 0; // Resetuj liczbę zakrytych liter
     for (int i = 0; i < password.length(); i++) {
         if (std::find(guessedLetters.begin(), guessedLetters.end(), tolower(password[i])) != guessedLetters.end()) {
             std::wcout << password[i] << " ";
         }
         else {
             std::wcout << L"_ ";
+            hiddenLetters++; // Zwiększ liczbę zakrytych liter
         }
     }
     std::wcout << std::endl;
@@ -112,6 +115,8 @@ void GetPlayerPassword() {
     std::transform(lowerPassword.begin(), lowerPassword.end(), lowerPassword.begin(), ::tolower);
     if (playerInput == lowerPassword) {
         std::wcout << L"Gratulacje! Odgadles haslo!" << std::endl;
+        score += (totalLetters - hiddenLetters) * 10 - totalErrors * 5;
+        std::wcout << L"Twoja punktacja: " << score << std::endl;
     }
     else {
         PrintGame(11);
@@ -156,7 +161,6 @@ void SetRandomPassword() {
     password = passwords[randomIndex];
 }
 
-//Check if all letters are guessed
 bool CheckWin() {
     for (int i = 0; i < password.length(); i++) {
         if (std::find(guessedLetters.begin(), guessedLetters.end(), tolower(password[i])) == guessedLetters.end()) {
@@ -170,11 +174,12 @@ bool GetStartNewGame() {
     std::wcout << L"Czy chcesz zagrac jeszcze raz? (T/N)" << std::endl;
     guessedLetters.clear();
     SetRandomPassword();
+    totalErrors = 0;
+    totalLetters = password.length();
     return GetPlayerInputYN();
 }
 
 int main() {
-    // Ustawienia kodowania konsoli na UTF-8
 #ifdef _WIN32
     SetConsoleOutputCP(CP_UTF8);
     _setmode(_fileno(stdout), _O_U16TEXT);
@@ -186,8 +191,10 @@ int main() {
         if (newGame) {
             PrintGame(0);
             b = 0;
+            totalErrors = 0; // Resetuj liczbę błędów
             std::wcout << L"Witaj w grze 'Wisielec'!" << std::endl;
             SetRandomPassword();
+            totalLetters = password.length(); // Ustaw liczbę liter w haśle
             ShowPassword();
             newGame = false;
         }
@@ -196,17 +203,20 @@ int main() {
         case 1:
         {
             char letter = GetPlayerInputChar();
-            if (CheckLetter(letter)) {
+            if (CheckLetter(letter) && std::find(guessedLetters.begin(), guessedLetters.end(), letter) == guessedLetters.end()) {
                 guessedLetters.push_back(letter);
                 if (CheckWin()) {
                     std::wcout << L"Gratulacje! Odgadles haslo!" << std::endl;
+                    score += (totalLetters - hiddenLetters) * 10 - totalErrors * 5;
+                    std::wcout << L"Twoja punktacja: " << score << std::endl;
                     inGame = GetStartNewGame();
-					newGame = true;
+                    newGame = true;
                     break;
                 }
             }
             else {
                 b++;
+                totalErrors++;
             }
             PrintGame(b);
             ShowPassword();
